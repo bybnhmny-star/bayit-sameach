@@ -13,6 +13,11 @@ service cloud.firestore {
       allow read, write: if signedIn() && request.auth.uid == uid;
     }
 
+    // Gold trading room: each user's own journal, checklist and settings
+    match /users/{uid}/gold/{doc} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
     match /houses/{hid} {
       allow get: if signedIn();
       allow create: if signedIn()
