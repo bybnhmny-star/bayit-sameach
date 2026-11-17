@@ -13,7 +13,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>window.GOLD_SA={fb:{apiKey:"AIzaSyCxUq7trf_qiQL0IYLZgNRf8rnFArb34-4",authDomain:"bayit-sameach.firebaseapp.com",projectId:"bayit-sameach",storageBucket:"bayit-sameach.firebasestorage.app",messagingSenderId:"1023751909684",appId:"1:1023751909684:web:10ce3f1024b946e0223561"}};</script>
-</head><body>
+</head>
 <title>חדר מסחר זהב</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap">
@@ -60,6 +60,8 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:16p
 .brand{font-weight:700;font-size:20px;letter-spacing:-.1px;display:flex;align-items:center;gap:11px;white-space:nowrap}
 .brand i{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;border:1px solid var(--gold-line);background:var(--gold-soft);color:var(--gold);font:600 12px/1 var(--fig);font-style:normal;letter-spacing:.2px}
 .brand em{font-style:normal;color:var(--gold)}
+.brand .bt{display:flex;flex-direction:column;line-height:1.15}
+.brand .bless{font:500 12px/1.3 var(--body);color:var(--gold);letter-spacing:.3px;margin-top:2px;opacity:.9}
 .clock{font-family:var(--fig);font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);direction:ltr;text-align:left;white-space:nowrap}
 .clock b{color:var(--ink);font-weight:500;font-size:15px;margin-inline-end:8px}
 h2{font-size:28px;font-weight:700;line-height:1.15;margin:0;letter-spacing:-.3px;text-wrap:balance}
@@ -557,7 +559,7 @@ a.planc:hover{border-color:var(--gold)}
 </style>
 <div class="wrap" dir="rtl" lang="he">
   <header class="top">
-    <div class="brand"><i>Au</i><span>חדר מסחר <em>זהב</em></span></div>
+    <div class="brand"><i>Au</i><span class="bt"><span>חדר מסחר <em>זהב</em></span><small class="bless">הכל בחסדי השם</small></span></div>
     <nav class="tabs" aria-label="מסכים"><div>
       <a href="#desk" data-v="desk">דסק</a>
       <a href="#plan" data-v="plan">תוכנית</a>
@@ -2034,7 +2036,9 @@ async function liveCandles(force){
     if(tf===TF)renderChart();renderHud();renderTicker(FEED||{});checkAlerts();renderFresh(new Date());
   }catch(e){if(e.api&&e.code===429)return;}
 }
-async function liveUsage(){try{const j=await td('api_usage',{});const u=parseFloat(j.current_usage),l=parseFloat(j.plan_limit);if(isN(u)&&isN(l)){TDM.left=Math.max(0,Math.round(l-u));TDM.limit=l;}}catch(e){}}
+function tdUse(u){u=u||{};const du=parseFloat(u.daily_usage),dl=parseFloat(u.plan_daily_limit);if(isN(du)&&isN(dl)&&dl>0)return [du,dl];
+  const cu=parseFloat(u.current_usage),pl=parseFloat(u.plan_limit);if(isN(cu)&&isN(pl)&&pl>=100)return [cu,pl];return null;} // plan_limit under 100 is the per-minute limit, not the day
+async function liveUsage(){try{const j=await td('api_usage',{});const r=tdUse(j);if(r){TDM.left=Math.max(0,Math.round(r[1]-r[0]));TDM.limit=r[1];}else{TDM.left=null;}}catch(e){}}
 let liveTimer=null,candleTimer=null;
 function startLive(){
   clearInterval(liveTimer);clearTimeout(candleTimer);if(LIVE.via==='mcp')return;LIVE.ok=false;
@@ -2176,8 +2180,8 @@ async function startMcp(fromClick){
   if(TDM.unq){try{TDM.unq();}catch(e){}}
   TDM.unq=TDM.mcp.watchTool(TDS,'get_quote',{symbol:'XAU/USD'},ev=>{if(ev.type==='error'){tdErr(ev.error);return;}onQuote(ev.result);},{cache:{staleTime:280e3,gcTime:6e5},refetchInterval:300e3});
   if(TDM.unu){try{TDM.unu();}catch(e){}}
-  TDM.unu=TDM.mcp.watchTool(TDS,'get_api_usage',null,ev=>{if(ev.type!=='data')return;const u=tdAny(ev.result)[0]||{};const used=parseFloat(u.current_usage),lim=parseFloat(u.plan_limit);
-    if(isN(used)&&isN(lim)){TDM.left=Math.max(0,Math.round(lim-used));TDM.limit=lim;renderFresh(new Date());}},{cache:{staleTime:85e4,gcTime:9e5},refetchInterval:9e5});
+  TDM.unu=TDM.mcp.watchTool(TDS,'get_api_usage',null,ev=>{if(ev.type!=='data')return;const r=tdUse(tdAny(ev.result)[0]);
+    if(r){TDM.left=Math.max(0,Math.round(r[1]-r[0]));TDM.limit=r[1];renderFresh(new Date());}},{cache:{staleTime:85e4,gcTime:9e5},refetchInterval:9e5});
   watchCandles();TDM.state='waiting';renderLiveBar();
   setTimeout(()=>{if(!LIVE.ok&&TDM.state==='waiting'){TDM.err='החיבור פתוח אבל לא הגיע מחיר תוך 20 שניות. לחץ שוב לנסות.';TDM.state='error';renderLiveBar();}},20000);
   return true;
